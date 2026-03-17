@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}Hotspot Map — Traffic Analyzer{% endblock %}
+{% block content %}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+  .map-layout { display:grid; grid-template-columns:260px 1fr; height:calc(100vh - 52px); }
+  .sidebar {
+    background:var(--bg2);
+    border-right:1px solid var(--border);
+    padding:20px;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  #map { width:100%; height:100%; min-height:500px; }
+  .hs-list { display:flex; flex-direction:column; gap:8px; margin-top:4px; }
+  .hs-item {
+    background:var(--bg3);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:10px 12px;
+    cursor:pointer;
+    transition:border-color .2s;
+  }
+  .hs-item:hover { border-color:var(--accent); }
+  .hs-name  { font-size:12px; font-weight:600; margin-bottom:4px; }
+  .hs-meta  { font-size:11px; color:var(--muted); }
+  .filter-row { display:flex; gap:8px; align-items:flex-end; }
+  .filter-row select { flex:1; }
+  .info-bar {
+    background:var(--bg2);
+    border-bottom:1px solid var(--border);
+    padding:10px 20px;
+    display:flex;
+    gap:24px;
+    font-size:12px;
+  }
+  .info-bar span { color:var(--muted); }
+  .info-bar b   { color:var(--text); }
+  .legend {
+    background:var(--bg2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:12px 14px;
+    font-size:12px;
+  }
+  .legend-item { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+</style>
+
+<!-- Info bar -->
+<div class="info-bar">
+  <div><span>Total hotspots: </span><b>{{ stats.total_hotspots }}</b></div>
+  <div><span>High risk: </span><b style="color:var(--red)">{{ stats.high_risk }}</b></div>
+  <div><span>Medium risk: </span><b style="color:var(--amber)">{{ stats.medium_risk }}</b></div>
+  <div><span>Low risk: </span><b style="color:var(--green)">{{ stats.low_risk }}</b></div>
+</div>
+
+<div class="map-layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div>
+      <div class="card-title">Filter by city</div>
+      <form method="get" class="filter-row">
+        <select name="city" onchange="this.form.submit()">
+          <option value="All" {% if city_sel == 'All' %}selected{% endif %}>All cities</option>
+          {% for c in cities %}
+          <option value="{{ c }}" {% if city_sel == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+
+    <div class="legend">
+      <div class="card-title" style="margin-bottom:10px">Risk level</div>
+      <div class="legend-item"><div class="dot" style="background:#e63946"></div> High risk</div>
+      <div class="legend-item"><div class="dot" style="background:#f4a261"></div> Medium risk</div>
+      <div class="legend-item"><div class="dot" style="background:#2a9d8f"></div> Low risk</div>
+      <div style="margin-top:10px;color:var(--muted);font-size:11px;">Circle size = accident count</div>
+    </div>
+
+    <div>
+      <div class="card-title">Top hotspots</div>
+      <div class="hs-list" id="hs-list"></div>
+    </div>
+  </div>
+
+  <!-- Map -->
+  <div id="map"></div>
+</div>
+
+<script>
+var HOTSPOTS = JSON.parse('{{ hotspots|escapejs }}');
+var RISK_COLORS = { High: '#e63946', Medium: '#f4a261', Low: '#2a9d8f' };
+
+// ── Map init ──────────────────────────────────────────────────────────────────
+var leafletMap = L.map('map', {
+  center: [37.8, -96],
+  zoom: 5,
+  zoomControl: true,
+});
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors',
+  maxZoom: 19
+}).addTo(leafletMap);
+
+// Force Leaflet to recalculate container size after DOM settles
+setTimeout(function() { leafletMap.invalidateSize(); }, 300);
+
+// ── Plot hotspot circles ──────────────────────────────────────────────────────
+var markerList = [];
+
+HOTSPOTS.forEach(function(hs) {
+  if (!hs.Lat || !hs.Lng) return;
+
+  var radius = 8 + Math.min(hs.Count / 30, 25);
+  var color  = RISK_COLORS[hs.Risk] || '#888888';
+
+  var circle = L.circleMarker([hs.Lat, hs.Lng], {
+    radius      : radius,
+    color       : color,
+    fillColor   : color,
+    fillOpacity : 0.55,
+    weight      : 1.5,
+  }).addTo(leafletMap);
+
+  circle.bindPopup(
+    '<div style="font-family:system-ui;font-size:13px;min-width:200px">' +
+      '<div style="font-weight:700;color:' + color + ';margin-bottom:6px">' +
+        hs.Risk + ' Risk Hotspot' +
+      '</div>' +
+      '<table style="width:100%;border-collapse:collapse">' +
+        '<tr><td style="color:#888;padding:2px 0">City</td><td>' + hs.City + '</td></tr>' +
+        '<tr><td style="color:#888;padding:2px 0">Cluster</td><td>' + hs.Cluster + '</td></tr>' +
+        '<tr><td style="color:#888;padding:2px 0">Accidents</td><td>' + Number(hs.Count).toLocaleString() + '</td></tr>' +
+        '<tr><td style="color:#888;padding:2px 0">Mean severity</td><td>' + hs.Mean_Severity + '</td></tr>' +
+        '<tr><td style="color:#888;padding:2px 0">Peak hour</td><td>' + String(hs.Peak_Hour).padStart(2,'0') + ':00</td></tr>' +
+        '<tr><td style="color:#888;padding:2px 0">Weather</td><td>' + hs.Weather + '</td></tr>' +
+      '</table>' +
+      '<div style="margin-top:10px">' +
+        '<a href="/risk/?lat=' + hs.Lat + '&lon=' + hs.Lng + '" ' +
+           'style="background:#7c6af5;color:#fff;padding:5px 12px;border-radius:6px;font-size:12px;text-decoration:none">' +
+          'Check risk here &rarr;' +
+        '</a>' +
+      '</div>' +
+    '</div>',
+    { maxWidth: 260 }
+  );
+
+  markerList.push({ circle: circle, hs: hs });
+});
+
+// ── Auto-zoom to data ─────────────────────────────────────────────────────────
+var validHS = HOTSPOTS.filter(function(h) { return h.Lat && h.Lng; });
+if (validHS.length > 0) {
+  var lats = validHS.map(function(h) { return h.Lat; });
+  var lngs = validHS.map(function(h) { return h.Lng; });
+  leafletMap.fitBounds([
+    [Math.min.apply(null, lats) - 0.5, Math.min.apply(null, lngs) - 0.5],
+    [Math.max.apply(null, lats) + 0.5, Math.max.apply(null, lngs) + 0.5]
+  ]);
+}
+
+// ── Populate sidebar list ─────────────────────────────────────────────────────
+var topHotspots = HOTSPOTS.slice().sort(function(a, b) {
+  return b.Count - a.Count;
+}).slice(0, 12);
+
+var listEl = document.getElementById('hs-list');
+
+topHotspots.forEach(function(hs) {
+  var div = document.createElement('div');
+  div.className = 'hs-item';
+  div.innerHTML =
+    '<div class="hs-name">' +
+      '<span style="color:' + (RISK_COLORS[hs.Risk] || '#888') + '">&#11044;</span> ' +
+      hs.City + ' &mdash; Cluster ' + hs.Cluster +
+    '</div>' +
+    '<div class="hs-meta">' +
+      Number(hs.Count).toLocaleString() + ' accidents &nbsp;|&nbsp; Sev: ' + hs.Mean_Severity +
+    '</div>';
+
+  div.onclick = function() {
+    leafletMap.setView([hs.Lat, hs.Lng], 13);
+    var found = markerList.find(function(m) {
+      return m.hs.Cluster === hs.Cluster && m.hs.City === hs.City;
+    });
+    if (found) found.circle.openPopup();
+  };
+
+  listEl.appendChild(div);
+});
+</script>
+
+{% endblock %}

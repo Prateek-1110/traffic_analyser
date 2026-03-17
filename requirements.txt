@@ -1,0 +1,15 @@
+pandas
+numpy
+matplotlib
+seaborn
+folium
+scikit-learn
+jupyterlab
+scipy
+django
+djangorestframework
+django
+pandas
+joblib
+numpy
+pyarrow

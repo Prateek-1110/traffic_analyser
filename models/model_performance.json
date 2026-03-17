@@ -1,0 +1,12 @@
+{
+  "random_forest": {
+    "roc_auc": 0.845,
+    "f1_macro": 0.4539,
+    "accuracy": 0.652
+  },
+  "logistic_regression": {
+    "roc_auc": 0.7392,
+    "f1_macro": 0.3538,
+    "accuracy": 0.5016
+  }
+}

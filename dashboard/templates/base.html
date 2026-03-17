@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Traffic Hotspot Analyzer{% endblock %}</title>
+  {% load static %}
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0f1117;
+      --bg2:     #1a1d27;
+      --bg3:     #22263a;
+      --border:  #2e3248;
+      --text:    #e2e4f0;
+      --muted:   #7b82a8;
+      --red:     #e63946;
+      --amber:   #f4a261;
+      --green:   #2a9d8f;
+      --blue:    #457b9d;
+      --accent:  #7c6af5;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
+
+    /* ── Nav ── */
+    nav {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      height: 52px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-brand {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-brand span { color: var(--accent); }
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      padding: 4px 0;
+      border-bottom: 2px solid transparent;
+      transition: color .2s, border-color .2s;
+    }
+    nav a:hover, nav a.active {
+      color: var(--text);
+      border-bottom-color: var(--accent);
+    }
+
+    /* ── Page layout ── */
+    .page { padding: 28px 32px; max-width: 1300px; margin: 0 auto; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 12px;
+    }
+
+    /* ── Stat chips ── */
+    .stat-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+    .stat {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 20px;
+      min-width: 130px;
+    }
+    .stat-value { font-size: 26px; font-weight: 700; line-height: 1; }
+    .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    /* ── Form inputs ── */
+    input[type=text], input[type=number], select {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 8px 12px;
+      font-size: 13px;
+      width: 100%;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input:focus, select:focus { border-color: var(--accent); }
+
+    label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 5px; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    /* ── Risk badges ── */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-High   { background: rgba(230,57,70,.2);  color: #ff6b76; }
+    .badge-Medium { background: rgba(244,162,97,.2); color: #f4a261; }
+    .badge-Low    { background: rgba(42,157,143,.2); color: #2fcfbe; }
+
+    /* ── Utils ── */
+    .flex { display: flex; }
+    .gap-16 { gap: 16px; }
+    .mt-16 { margin-top: 16px; }
+    .mt-24 { margin-top: 24px; }
+    .text-muted { color: var(--muted); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<nav>
+  <a href="/" class="nav-brand">&#9651; <span>HotSpot</span> Analyzer</a>
+  <a href="/map/"      {% if request.resolver_match.url_name == 'map'      %}class="active"{% endif %}>Map</a>
+  <a href="/insights/" {% if request.resolver_match.url_name == 'insights' %}class="active"{% endif %}>Insights</a>
+  <a href="/risk/"     {% if request.resolver_match.url_name == 'risk'     %}class="active"{% endif %}>Risk Check</a>
+</nav>
+
+{% block content %}{% endblock %}
+
+</body>
+</html>

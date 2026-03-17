@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+{% block title %}Risk Check — Traffic Analyzer{% endblock %}
+{% block content %}
+
+<style>
+  .risk-layout {
+    display:grid;
+    grid-template-columns:420px 1fr;
+    gap:24px;
+    padding:28px 32px;
+    max-width:1100px;
+    margin:0 auto;
+  }
+  @media(max-width:800px){ .risk-layout{ grid-template-columns:1fr; } }
+
+  .result-box {
+    display:none;
+    background:var(--bg2);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:28px;
+    text-align:center;
+    flex-direction:column;
+    align-items:center;
+    gap:16px;
+  }
+  .result-box.show { display:flex; }
+
+  .risk-icon {
+    font-size:56px;
+    line-height:1;
+    margin-bottom:4px;
+  }
+  .risk-label-big {
+    font-size:32px;
+    font-weight:800;
+    letter-spacing:.02em;
+  }
+  .confidence-bar {
+    width:100%;
+    background:var(--bg3);
+    border-radius:99px;
+    height:8px;
+    overflow:hidden;
+    margin-top:4px;
+  }
+  .confidence-fill {
+    height:100%;
+    border-radius:99px;
+    transition:width .6s ease;
+  }
+
+  .prob-row {
+    display:flex;
+    justify-content:space-between;
+    width:100%;
+    gap:10px;
+    margin-top:8px;
+  }
+  .prob-card {
+    flex:1;
+    background:var(--bg3);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px;
+    text-align:center;
+  }
+  .prob-val  { font-size:20px; font-weight:700; }
+  .prob-name { font-size:11px; color:var(--muted); margin-top:3px; }
+
+  .loading {
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+    padding:40px;
+    color:var(--muted);
+  }
+  .loading.show { display:flex; }
+
+  .spinner {
+    width:32px;height:32px;
+    border:3px solid var(--border);
+    border-top-color:var(--accent);
+    border-radius:50%;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to{ transform:rotate(360deg); } }
+
+  .checkbox-group {
+    display:flex;
+    gap:20px;
+    flex-wrap:wrap;
+  }
+  .checkbox-group label {
+    display:flex;
+    align-items:center;
+    gap:6px;
+    cursor:pointer;
+    color:var(--text);
+    font-size:13px;
+  }
+  .checkpoint-tip {
+    font-size:11px;
+    color:var(--muted);
+    margin-top:16px;
+    padding:10px 14px;
+    border-left:3px solid var(--border);
+    line-height:1.6;
+  }
+</style>
+
+<div class="risk-layout">
+  <!-- Form panel -->
+  <div>
+    <h1 style="font-size:20px;font-weight:700;margin-bottom:6px;">Risk Level Predictor</h1>
+    <p class="text-muted" style="font-size:13px;margin-bottom:24px;">
+      Enter a location, time, and conditions to get a predicted accident risk level.
+    </p>
+
+    <div class="card">
+      <div class="card-title">Location</div>
+      <div class="form-grid">
+        <div>
+          <label>Latitude</label>
+          <input type="number" id="lat" step="0.0001" value="{{ request.GET.lat|default:'34.05' }}" placeholder="34.05">
+        </div>
+        <div>
+          <label>Longitude</label>
+          <input type="number" id="lon" step="0.0001" value="{{ request.GET.lon|default:'-118.24' }}" placeholder="-118.24">
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-16">
+      <div class="card-title">Time</div>
+      <div class="form-grid">
+        <div>
+          <label>Hour (0–23)</label>
+          <input type="number" id="hour" min="0" max="23" value="8">
+        </div>
+        <div>
+          <label>Month (1–12)</label>
+          <input type="number" id="month" min="1" max="12" value="6">
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-16">
+      <div class="card-title">Weather conditions</div>
+      <div style="margin-bottom:16px;">
+        <label>Weather group</label>
+        <select id="weather">
+          {% for w in weather_options %}
+          <option value="{{ w }}">{{ w }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-grid">
+        <div>
+          <label>Temperature (°F)</label>
+          <input type="number" id="temp" value="65">
+        </div>
+        <div>
+          <label>Humidity (%)</label>
+          <input type="number" id="humidity" value="50">
+        </div>
+        <div>
+          <label>Visibility (mi)</label>
+          <input type="number" id="visibility" value="10" step="0.5">
+        </div>
+        <div>
+          <label>Precipitation (in)</label>
+          <input type="number" id="precipitation" value="0" step="0.01">
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-16">
+      <div class="card-title">Road features</div>
+      <div class="checkbox-group">
+        <label><input type="checkbox" id="junction"> Junction</label>
+        <label><input type="checkbox" id="traffic_signal"> Traffic signal</label>
+        <label><input type="checkbox" id="crossing"> Crossing</label>
+      </div>
+    </div>
+
+    <button class="btn btn-primary mt-16" onclick="predict()" style="width:100%;padding:12px;font-size:14px;">
+      &#9670; Predict Risk Level
+    </button>
+
+    <div class="checkpoint-tip">
+      Tip: Try switching weather to <b>Snow/Ice</b> + hour <b>2</b> + visibility <b>0.5</b> to see a High-risk prediction.
+    </div>
+  </div>
+
+  <!-- Result panel -->
+  <div>
+    <!-- Loading -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <div>Running prediction model...</div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="empty" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--muted);text-align:center;padding:40px;">
+      <div style="font-size:48px;opacity:.3;">&#9670;</div>
+      <div style="font-size:14px;">Fill in the form and click Predict</div>
+    </div>
+
+    <!-- Result -->
+    <div class="result-box" id="result">
+      <div class="risk-icon" id="res-icon"></div>
+      <div class="risk-label-big" id="res-label"></div>
+      <div style="color:var(--muted);font-size:13px;" id="res-conf-text"></div>
+      <div class="confidence-bar" style="width:80%">
+        <div class="confidence-fill" id="res-conf-fill"></div>
+      </div>
+      <div class="prob-row">
+        <div class="prob-card">
+          <div class="prob-val" id="prob-high" style="color:#e63946">—</div>
+          <div class="prob-name">High</div>
+        </div>
+        <div class="prob-card">
+          <div class="prob-val" id="prob-medium" style="color:#f4a261">—</div>
+          <div class="prob-name">Medium</div>
+        </div>
+        <div class="prob-card">
+          <div class="prob-val" id="prob-low" style="color:#2a9d8f">—</div>
+          <div class="prob-name">Low</div>
+        </div>
+      </div>
+      <div id="res-detail" style="font-size:12px;color:var(--muted);text-align:left;width:100%;border-top:1px solid var(--border);padding-top:14px;line-height:1.8;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ICONS   = { High:'&#128308;', Medium:'&#128993;', Low:'&#128994;' };
+const COLORS  = { High:'#e63946',   Medium:'#f4a261',   Low:'#2a9d8f'  };
+
+async function predict() {
+  document.getElementById('empty').style.display  = 'none';
+  document.getElementById('result').classList.remove('show');
+  document.getElementById('loading').classList.add('show');
+
+  const payload = {
+    lat:              parseFloat(document.getElementById('lat').value),
+    lon:              parseFloat(document.getElementById('lon').value),
+    hour:             parseInt(document.getElementById('hour').value),
+    month:            parseInt(document.getElementById('month').value),
+    temperature_f:    parseFloat(document.getElementById('temp').value),
+    humidity_pct:     parseFloat(document.getElementById('humidity').value),
+    visibility_mi:    parseFloat(document.getElementById('visibility').value),
+    precipitation_in: parseFloat(document.getElementById('precipitation').value),
+    weather_group:    document.getElementById('weather').value,
+    junction:         document.getElementById('junction').checked,
+    traffic_signal:   document.getElementById('traffic_signal').checked,
+    crossing:         document.getElementById('crossing').checked,
+  };
+
+  try {
+    const res  = await fetch('/api/predict/', {
+      method : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body   : JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      alert('Prediction error: ' + data.error);
+      document.getElementById('loading').classList.remove('show');
+      return;
+    }
+
+    // Populate result
+    const risk   = data.risk_label;
+    const color  = COLORS[risk]  || '#888';
+    const icon   = ICONS[risk]   || '?';
+    const conf   = data.confidence;
+    const probs  = data.probabilities;
+
+    document.getElementById('res-icon').innerHTML     = icon;
+    document.getElementById('res-label').textContent  = risk + ' Risk';
+    document.getElementById('res-label').style.color  = color;
+    document.getElementById('res-conf-text').textContent = `Model confidence: ${conf}%`;
+    document.getElementById('res-conf-fill').style.width      = conf + '%';
+    document.getElementById('res-conf-fill').style.background = color;
+    document.getElementById('prob-high').textContent   = (probs['High']   || 0) + '%';
+    document.getElementById('prob-medium').textContent = (probs['Medium'] || 0) + '%';
+    document.getElementById('prob-low').textContent    = (probs['Low']    || 0) + '%';
+
+    const hour  = payload.hour;
+    const tod   = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : hour < 21 ? 'evening' : 'night';
+    document.getElementById('res-detail').innerHTML = `
+      <b>Input summary</b><br>
+      Location: ${payload.lat.toFixed(4)}, ${payload.lon.toFixed(4)}<br>
+      Time: ${String(hour).padStart(2,'0')}:00 (${tod}) &nbsp;|&nbsp; Month: ${payload.month}<br>
+      Weather: ${payload.weather_group} &nbsp;|&nbsp; Visibility: ${payload.visibility_mi} mi<br>
+      Temperature: ${payload.temperature_f}°F &nbsp;|&nbsp; Precipitation: ${payload.precipitation_in} in<br>
+      Road features: ${[
+        payload.junction       ? 'Junction'        : null,
+        payload.traffic_signal ? 'Traffic signal'  : null,
+        payload.crossing       ? 'Crossing'        : null,
+      ].filter(Boolean).join(', ') || 'None'}
+    `;
+
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('result').classList.add('show');
+
+  } catch (e) {
+    alert('Network error: ' + e.message);
+    document.getElementById('loading').classList.remove('show');
+  }
+}
+
+// Pre-fill from URL params (hotspot map "Check risk here" links)
+const params = new URLSearchParams(window.location.search);
+if (params.get('lat')) document.getElementById('lat').value = params.get('lat');
+if (params.get('lon')) document.getElementById('lon').value = params.get('lon');
+</script>
+
+{% endblock %}

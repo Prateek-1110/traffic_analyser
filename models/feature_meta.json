@@ -1,0 +1,66 @@
+{
+  "features": [
+    "Start_Lat",
+    "Start_Lng",
+    "Temperature(F)",
+    "Humidity(%)",
+    "Visibility(mi)",
+    "Wind_Speed(mph)",
+    "Precipitation(in)",
+    "Junction",
+    "Traffic_Signal",
+    "Crossing",
+    "IsWeekend",
+    "Hour_sin",
+    "Hour_cos",
+    "Month_sin",
+    "Month_cos",
+    "WeatherGroup_Clear",
+    "WeatherGroup_Cloudy",
+    "WeatherGroup_Fog/Mist",
+    "WeatherGroup_Other",
+    "WeatherGroup_Rain",
+    "WeatherGroup_Snow/Ice",
+    "WeatherGroup_Thunderstorm",
+    "Sunrise_Sunset_Day",
+    "Sunrise_Sunset_Night",
+    "Season_Fall",
+    "Season_Spring",
+    "Season_Summer",
+    "Season_Winter",
+    "TimeOfDay_Afternoon",
+    "TimeOfDay_Evening",
+    "TimeOfDay_Morning",
+    "TimeOfDay_Night"
+  ],
+  "weather_groups": [
+    "Clear",
+    "Cloudy",
+    "Rain",
+    "Fog/Mist",
+    "Snow/Ice",
+    "Thunderstorm",
+    "Other"
+  ],
+  "seasons": [
+    "Winter",
+    "Spring",
+    "Summer",
+    "Fall"
+  ],
+  "time_of_day": [
+    "Morning",
+    "Afternoon",
+    "Evening",
+    "Night"
+  ],
+  "sunrise_sunset": [
+    "Day",
+    "Night"
+  ],
+  "risk_classes": [
+    "High",
+    "Low",
+    "Medium"
+  ]
+}

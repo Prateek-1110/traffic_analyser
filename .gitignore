@@ -1,0 +1,2 @@
+models/rf_model.pkl
+data/accidents_clean.parquet

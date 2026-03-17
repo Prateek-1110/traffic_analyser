@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Insights — Traffic Analyzer{% endblock %}
+{% block content %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+  .ins-header {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:24px;
+  }
+  .ins-header h1 { font-size:20px; font-weight:700; }
+  canvas { max-height:280px; }
+</style>
+
+<div class="page">
+  <div class="ins-header">
+    <h1>Accident Insights</h1>
+    <div style="color:var(--muted);font-size:13px;">Dataset: {{ total }} records</div>
+  </div>
+
+  <!-- Row 1: Hour + Day -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Accidents by hour of day</div>
+      <canvas id="chart-hour"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Accidents by day of week</div>
+      <canvas id="chart-day"></canvas>
+    </div>
+  </div>
+
+  <!-- Row 2: Severity + Weather -->
+  <div class="grid-2 mt-24">
+    <div class="card">
+      <div class="card-title">Severity distribution</div>
+      <canvas id="chart-sev"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Top weather conditions</div>
+      <canvas id="chart-wx"></canvas>
+    </div>
+  </div>
+
+  <!-- Row 3: States full width -->
+  <div class="mt-24">
+    <div class="card">
+      <div class="card-title">Top 10 states by accident count</div>
+      <canvas id="chart-state" style="max-height:240px"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+Chart.defaults.color         = '#7b82a8';
+Chart.defaults.borderColor   = '#2e3248';
+Chart.defaults.font.family   = 'Inter, system-ui, sans-serif';
+Chart.defaults.font.size     = 12;
+
+const PALETTE = ['#e63946','#457b9d','#2a9d8f','#e9c46a','#f4a261',
+                 '#7c6af5','#06d6a0','#ef476f','#118ab2','#ffd166'];
+
+function labels(data, key)  { return data.map(d => d[key]); }
+function values(data, key)  { return data.map(d => d[key]); }
+
+// ── Hour chart ───────────────────────────────────────────────────────────────
+const hourData = {{ by_hour|safe }};
+new Chart('chart-hour', {
+  type: 'bar',
+  data: {
+    labels: labels(hourData, 'Hour'),
+    datasets: [{
+      label: 'Accidents',
+      data: values(hourData, 'count'),
+      backgroundColor: hourData.map(d =>
+        [7,8,17,18,19].includes(d.Hour) ? '#e63946cc' : '#457b9d88'
+      ),
+      borderRadius: 4,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    plugins: { legend: { display:false },
+               tooltip: { callbacks: { label: ctx => ` ${ctx.raw.toLocaleString()}` } } },
+    scales: {
+      x: { grid: { display:false } },
+      y: { grid: { color:'#2e3248' },
+           ticks: { callback: v => v >= 1e6 ? (v/1e6).toFixed(1)+'M'
+                                 : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v } }
+    }
+  }
+});
+
+// ── Day chart ────────────────────────────────────────────────────────────────
+const dayData = {{ by_day|safe }};
+new Chart('chart-day', {
+  type: 'bar',
+  data: {
+    labels: labels(dayData, 'day'),
+    datasets: [{
+      label: 'Accidents',
+      data: values(dayData, 'count'),
+      backgroundColor: dayData.map(d =>
+        ['Saturday','Sunday'].includes(d.day) ? '#f4a261cc' : '#2a9d8f88'
+      ),
+      borderRadius: 4,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    plugins: { legend: { display:false } },
+    scales: {
+      x: { grid: { display:false } },
+      y: { grid: { color:'#2e3248' },
+           ticks: { callback: v => v >= 1e6 ? (v/1e6).toFixed(1)+'M'
+                                 : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v } }
+    }
+  }
+});
+
+// ── Severity donut ───────────────────────────────────────────────────────────
+const sevData = {{ by_sev|safe }};
+new Chart('chart-sev', {
+  type: 'doughnut',
+  data: {
+    labels: sevData.map(d => `Severity ${d.severity}`),
+    datasets: [{
+      data: values(sevData, 'count'),
+      backgroundColor: ['#2a9d8f','#457b9d','#f4a261','#e63946'],
+      borderWidth: 2,
+      borderColor: '#1a1d27',
+    }]
+  },
+  options: {
+    cutout: '60%',
+    plugins: {
+      legend: { position:'right' },
+      tooltip: { callbacks: { label: ctx =>
+        ` ${ctx.label}: ${ctx.raw.toLocaleString()}`
+      }}
+    }
+  }
+});
+
+// ── Weather bar ──────────────────────────────────────────────────────────────
+const wxData = {{ by_wx|safe }};
+new Chart('chart-wx', {
+  type: 'bar',
+  data: {
+    labels: labels(wxData, 'weather'),
+    datasets: [{
+      label: 'Accidents',
+      data: values(wxData, 'count'),
+      backgroundColor: PALETTE,
+      borderRadius: 4,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend: { display:false } },
+    scales: {
+      x: { grid: { color:'#2e3248' },
+           ticks: { callback: v => v >= 1e6 ? (v/1e6).toFixed(1)+'M'
+                                 : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v } },
+      y: { grid: { display:false } }
+    }
+  }
+});
+
+// ── States chart ─────────────────────────────────────────────────────────────
+const stateData = {{ by_state|safe }};
+new Chart('chart-state', {
+  type: 'bar',
+  data: {
+    labels: labels(stateData, 'state'),
+    datasets: [{
+      label: 'Accidents',
+      data: values(stateData, 'count'),
+      backgroundColor: '#7c6af5aa',
+      borderRadius: 4,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    plugins: { legend: { display:false } },
+    scales: {
+      x: { grid: { display:false } },
+      y: { grid: { color:'#2e3248' },
+           ticks: { callback: v => v >= 1e6 ? (v/1e6).toFixed(1)+'M'
+                                 : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v } }
+    }
+  }
+});
+</script>
+
+{% endblock %}
