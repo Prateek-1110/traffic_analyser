@@ -3,14 +3,21 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from huggingface_hub import hf_hub_download
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from shared_styles import (init_theme, inject_styles, tokens, footer,
+                           theme_toggle, page_header, section_label)
 
-st.set_page_config(page_title="Insights", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Insights", page_icon="📊",
+                   layout="wide", initial_sidebar_state="expanded")
+init_theme()
+inject_styles()
+t = tokens()
 
-st.title("📊 Accident Insights")
-st.caption("Patterns across time, weather, severity, and geography")
+theme_toggle()
 
-# ── Download parquet from Hugging Face (cached after first load) ──────────────
-@st.cache_data(show_spinner="Downloading dataset from Hugging Face (~first load only)...")
+# ── Load ──────────────────────────────────────────────────────────────────────
+@st.cache_data(show_spinner="Downloading dataset from Hugging Face…")
 def load_data():
     path = hf_hub_download(
         repo_id="Prateek-1110/traffic_analyser",
@@ -18,126 +25,132 @@ def load_data():
         repo_type="dataset",
     )
     return pd.read_parquet(
-        path,
-        columns=["Severity", "Hour", "DayOfWeek", "MonthName",
-                 "WeatherGroup", "Season", "State", "City", "TimeOfDay"]
+        path, columns=["Severity", "Hour", "DayOfWeek", "MonthName",
+                       "WeatherGroup", "Season", "State", "City", "TimeOfDay"]
     )
 
-df = load_data()
+with st.spinner("Loading dataset…"):
+    df = load_data()
 
+page_header("// 02 · insights", "Accident Insights",
+            "Patterns across time, weather, severity, and geography", t["accent2"])
 st.metric("Total records", f"{len(df):,}")
-st.markdown("---")
+st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
-# ── Plot config ───────────────────────────────────────────────────────────────
-COLORS = ["#e63946", "#457b9d", "#2a9d8f", "#e9c46a",
-          "#f4a261", "#7c6af5", "#06d6a0", "#ef476f"]
+# ── Chart theme ───────────────────────────────────────────────────────────────
+is_dark = st.session_state.get("theme", "dark") == "dark"
+GRID    = dict(gridcolor=t["chart_grid"], zerolinecolor=t["chart_grid"])
+FONT    = dict(family="JetBrains Mono, monospace", color=t["text_m"], size=11)
+LAYOUT  = dict(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+               font=FONT, margin=dict(l=8, r=8, t=32, b=8))
+TITLE_F = dict(color=t["text_h"], size=13, family="Syne, sans-serif")
+ACC     = [t["accent"], t["accent2"], t["accent3"], t["danger"],
+           "#457b9d", "#2a9d8f", "#e9c46a", "#ef476f"]
+DIM     = t["bar_dim"]
 
-PLOT_THEME = dict(
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
-    font_color="#c9cde0",
-    font_size=12,
-)
-
-# ── Row 1: Hour + Day ─────────────────────────────────────────────────────────
+# ── Hour + Day ────────────────────────────────────────────────────────────────
+section_label("Time patterns", t["accent"])
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("#### Accidents by hour")
     by_hour = df.groupby("Hour").size().reset_index(name="count")
-    by_hour["color"] = by_hour["Hour"].apply(
-        lambda h: "#e63946" if h in [7, 8, 17, 18, 19] else "#457b9d"
-    )
+    by_hour["rush"] = by_hour["Hour"].isin([7, 8, 17, 18, 19])
     fig = go.Figure(go.Bar(
         x=by_hour["Hour"], y=by_hour["count"],
-        marker_color=by_hour["color"],
-        hovertemplate="Hour %{x}:00<br>%{y:,} accidents<extra></extra>"
+        marker_color=by_hour["rush"].map({True: t["accent"], False: DIM}),
+        marker_line_width=0,
+        hovertemplate="<b>%{x}:00</b><br>%{y:,} accidents<extra></extra>",
     ))
-    fig.update_layout(xaxis_title="Hour", yaxis_title="Count",
-                      **PLOT_THEME, margin=dict(l=10,r=10,t=10,b=10))
-    fig.update_xaxes(gridcolor="#2e3248")
-    fig.update_yaxes(gridcolor="#2e3248")
+    fig.update_layout(title=dict(text="Accidents by hour", font=TITLE_F),
+                      xaxis=dict(title="Hour", **GRID, tickfont=FONT),
+                      yaxis=dict(**GRID, tickfont=FONT),
+                      showlegend=False, **LAYOUT)
     st.plotly_chart(fig, use_container_width=True)
-    st.caption("Red = rush hours (7–8am, 5–7pm)")
+    st.caption("Highlighted = rush hours (7–8am, 5–7pm)")
 
 with col2:
-    st.markdown("#### Accidents by day of week")
     day_order = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
     by_day = df["DayOfWeek"].value_counts().reindex(day_order).reset_index()
     by_day.columns = ["day", "count"]
-    by_day["color"] = by_day["day"].apply(
-        lambda d: "#f4a261" if d in ["Saturday","Sunday"] else "#2a9d8f"
-    )
+    by_day["wknd"] = by_day["day"].isin(["Saturday", "Sunday"])
     fig = go.Figure(go.Bar(
         x=by_day["day"], y=by_day["count"],
-        marker_color=by_day["color"],
-        hovertemplate="%{x}<br>%{y:,} accidents<extra></extra>"
+        marker_color=by_day["wknd"].map({True: t["accent3"], False: DIM}),
+        marker_line_width=0,
+        hovertemplate="<b>%{x}</b><br>%{y:,}<extra></extra>",
     ))
-    fig.update_layout(xaxis_title="", yaxis_title="Count",
-                      **PLOT_THEME, margin=dict(l=10,r=10,t=10,b=10))
-    fig.update_xaxes(gridcolor="#2e3248")
-    fig.update_yaxes(gridcolor="#2e3248")
+    fig.update_layout(title=dict(text="Accidents by day of week", font=TITLE_F),
+                      xaxis=dict(**GRID, tickfont=FONT),
+                      yaxis=dict(**GRID, tickfont=FONT),
+                      showlegend=False, **LAYOUT)
     st.plotly_chart(fig, use_container_width=True)
-    st.caption("Orange = weekends")
+    st.caption("Highlighted = weekends")
 
-st.markdown("---")
+# ── Heatmap ───────────────────────────────────────────────────────────────────
+section_label("Hour × day density", t["accent2"])
+pivot = (df.groupby(["DayOfWeek", "Hour"]).size().unstack(fill_value=0)
+         .reindex(["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]))
+cs = (["#080b12","#0d1a2e", t["accent2"], t["accent"]] if is_dark
+      else ["#f4f5f9","#dde1ec", t["accent2"], t["accent"]])
+fig = px.imshow(pivot, color_continuous_scale=cs,
+                labels=dict(x="Hour", y="", color="Accidents"), aspect="auto")
+fig.update_layout(title=dict(text="Accident density — hour × day", font=TITLE_F),
+                  coloraxis_colorbar=dict(tickfont=FONT), **LAYOUT)
+fig.update_xaxes(**GRID, tickfont=FONT)
+fig.update_yaxes(gridcolor=t["chart_grid"], tickfont=FONT)
+st.plotly_chart(fig, use_container_width=True)
 
-# ── Row 2: Severity + Weather ─────────────────────────────────────────────────
+# ── Severity + Weather ────────────────────────────────────────────────────────
+section_label("Severity & weather", t["accent3"])
 col3, col4 = st.columns(2)
 
 with col3:
-    st.markdown("#### Severity distribution")
     by_sev = df["Severity"].value_counts().sort_index().reset_index()
     by_sev.columns = ["severity", "count"]
-    by_sev["label"] = by_sev["severity"].apply(lambda s: f"Severity {s}")
-    fig = px.pie(
-        by_sev, names="label", values="count",
-        color_discrete_sequence=["#2a9d8f","#457b9d","#f4a261","#e63946"],
-        hole=0.55,
-    )
-    fig.update_layout(**PLOT_THEME, margin=dict(l=10,r=10,t=10,b=10),
-                      showlegend=True, legend=dict(font_color="#c9cde0"))
-    fig.update_traces(textinfo="percent", textfont_color="#c9cde0")
+    by_sev["label"] = by_sev["severity"].apply(lambda s: f"Severity {int(s)}")
+    fig = px.pie(by_sev, names="label", values="count", hole=0.62,
+                 color_discrete_sequence=["#2a9d8f","#457b9d", t["accent3"], t["danger"]])
+    fig.update_layout(title=dict(text="Severity distribution", font=TITLE_F),
+                      showlegend=True,
+                      legend=dict(font=dict(color=t["text_m"], size=11)),
+                      **LAYOUT)
+    fig.update_traces(textinfo="percent",
+                      textfont=dict(color=t["text_h"], size=11))
     st.plotly_chart(fig, use_container_width=True)
 
 with col4:
-    st.markdown("#### Top weather conditions")
     by_wx = df["WeatherGroup"].value_counts().head(7).reset_index()
     by_wx.columns = ["weather", "count"]
-    fig = px.bar(
-        by_wx, x="count", y="weather", orientation="h",
-        color="weather", color_discrete_sequence=COLORS,
-    )
-    fig.update_layout(**PLOT_THEME, margin=dict(l=10,r=10,t=10,b=10),
-                      yaxis=dict(categoryorder="total ascending"), showlegend=False)
-    fig.update_xaxes(gridcolor="#2e3248")
-    fig.update_yaxes(gridcolor="#2e3248")
+    fig = go.Figure(go.Bar(
+        x=by_wx["count"], y=by_wx["weather"], orientation="h",
+        marker_color=ACC[:len(by_wx)], marker_line_width=0,
+        hovertemplate="<b>%{y}</b><br>%{x:,}<extra></extra>",
+    ))
+    fig.update_layout(title=dict(text="Weather conditions", font=TITLE_F),
+                      xaxis=dict(**GRID, tickfont=FONT),
+                      yaxis=dict(categoryorder="total ascending",
+                                 gridcolor=t["chart_grid"], tickfont=FONT),
+                      showlegend=False, **LAYOUT)
     st.plotly_chart(fig, use_container_width=True)
 
-st.markdown("---")
-
-# ── Row 3: Heatmap ────────────────────────────────────────────────────────────
-st.markdown("#### Accident density — hour × day of week")
-pivot = df.groupby(["DayOfWeek","Hour"]).size().unstack(fill_value=0)
-pivot = pivot.reindex(["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"])
-fig = px.imshow(
-    pivot,
-    color_continuous_scale=["#1a1d27","#457b9d","#f4a261","#e63946"],
-    labels=dict(x="Hour", y="", color="Accidents"),
-    aspect="auto",
-)
-fig.update_layout(**PLOT_THEME, margin=dict(l=10,r=10,t=10,b=10))
-st.plotly_chart(fig, use_container_width=True)
-
-st.markdown("---")
-
-# ── Row 4: Top states ─────────────────────────────────────────────────────────
-st.markdown("#### Top 10 states by accident count")
+# ── States ────────────────────────────────────────────────────────────────────
+section_label("Geography", t["danger"])
 by_state = df["State"].value_counts().head(10).reset_index()
 by_state.columns = ["state", "count"]
-fig = px.bar(by_state, x="state", y="count",
-             color_discrete_sequence=["#7c6af5"])
-fig.update_layout(**PLOT_THEME, margin=dict(l=10,r=10,t=10,b=10), showlegend=False)
-fig.update_xaxes(gridcolor="#2e3248")
-fig.update_yaxes(gridcolor="#2e3248")
+fig = go.Figure(go.Bar(
+    x=by_state["state"], y=by_state["count"],
+    marker=dict(
+        color=by_state["count"],
+        colorscale=[[0, DIM], [0.5, t["accent2"]], [1, t["accent"]]],
+        showscale=False,
+    ),
+    marker_line_width=0,
+    hovertemplate="<b>%{x}</b><br>%{y:,}<extra></extra>",
+))
+fig.update_layout(title=dict(text="Top 10 states by accident count", font=TITLE_F),
+                  xaxis=dict(**GRID, tickfont=FONT),
+                  yaxis=dict(**GRID, tickfont=FONT),
+                  showlegend=False, **LAYOUT)
 st.plotly_chart(fig, use_container_width=True)
+
+footer()
