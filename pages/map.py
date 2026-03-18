@@ -5,7 +5,7 @@ from folium.plugins import HeatMap
 from streamlit_folium import st_folium
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from shared_styles import init_theme, inject_styles, tokens, footer, theme_toggle, page_header, section_label
+from shared_styles import init_theme, inject_styles, tokens, footer, theme_toggle, page_header, section_label , get_theme
 
 st.set_page_config(page_title="Hotspot Map", page_icon="🗺",
                    layout="wide", initial_sidebar_state="expanded")
@@ -14,7 +14,7 @@ inject_styles()
 t = tokens()
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
-theme_toggle()
+# theme_toggle()
 
 @st.cache_data
 def load_hotspots():

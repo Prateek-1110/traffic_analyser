@@ -1,7 +1,4 @@
 import streamlit as st
-st.write("new")
-st.cache_data.clear()
-st.cache_resource.clear()
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
 from shared_styles import init_theme, inject_styles, tokens, footer, theme_toggle, page_header
@@ -18,7 +15,7 @@ inject_styles()
 t = tokens()
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
-theme_toggle()
+# theme_toggle()
 st.sidebar.markdown(f"""
 <div style="padding:.5rem 0;font-size:12px;color:{t['text_m']};line-height:1.8">
     <div style="font-family:'JetBrains Mono',monospace;font-size:10px;

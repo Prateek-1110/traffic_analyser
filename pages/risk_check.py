@@ -6,7 +6,7 @@ from huggingface_hub import hf_hub_download
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from shared_styles import (init_theme, inject_styles, tokens, footer,
-                           theme_toggle, page_header)
+                           theme_toggle, page_header,get_theme)
 
 st.set_page_config(page_title="Risk Check", page_icon="🔮",
                    layout="wide", initial_sidebar_state="expanded")
@@ -14,7 +14,7 @@ init_theme()
 inject_styles()
 t = tokens()
 
-theme_toggle()
+# theme_toggle()
 
 # ── Load model ────────────────────────────────────────────────────────────────
 @st.cache_resource(show_spinner="Loading prediction model…")

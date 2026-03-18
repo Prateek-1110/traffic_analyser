@@ -14,24 +14,25 @@ def get_tokens():
     dark = get_theme() == "dark"
     if dark:
         return dict(
-            bg="#080b12", bg2="#0d1117", bg3="#141928",
-            border="#1e2535", border_h="#2e3a52",
-            text="#c8cfe0", text_h="#edf0f7", text_m="#5a6a8a", text_dim="#2e3a52",
-            accent="#4fffb0", accent2="#7c6af5", accent3="#f4a261", danger="#e63946",
-            chart_grid="#141928", sidebar_bg="#0d1017",
-            bar_dim="#1e2a3a", btn_text="#080b12",
-            card_high="#1a0a0c", card_med="#1a120a", card_low="#081a12",
-        )
+        bg="#080b12", bg2="#0d1117", bg3="#141928",
+        border="#1e2535", border_h="#2e3a52",
+        text="#c8cfe0", text_h="#edf0f7", text_m="#5a6a8a", text_dim="#2e3a52",
+        accent="#4fffb0", accent2="#7c6af5", accent3="#f4a261", danger="#e63946",
+        chart_grid="#141928", sidebar_bg="#0d1017",
+        bar_dim="#1e2a3a", btn_text="#080b12",
+        card_high="#1a0a0c", card_med="#1a120a", card_low="#081a12",
+    )
     else:
         return dict(
-            bg="#f4f5f9", bg2="#ffffff", bg3="#eef0f6",
-            border="#dde1ec", border_h="#b0b8d0",
-            text="#2d3550", text_h="#0f1420", text_m="#7a85a3", text_dim="#b0b8d0",
-            accent="#0ea572", accent2="#5b4fd4", accent3="#d97706", danger="#dc2626",
-            chart_grid="#e8eaf0", sidebar_bg="#eef0f5",
-            bar_dim="#dde1ec", btn_text="#ffffff",
-            card_high="#fff0f0", card_med="#fff8ee", card_low="#eefff8",
-        )
+        bg="#f4f5f9", bg2="#ffffff", bg3="#eef0f6",
+        border="#c4cadb", border_h="#8c9ab8", 
+        text="#2d3550", text_h="#0f1420", text_m="#5b6987", text_dim="#8392b4",
+        
+        accent="#0ea572", accent2="#5b4fd4", accent3="#d97706", danger="#dc2626",
+        chart_grid="#dce0eb", sidebar_bg="#ebf0f7",
+        bar_dim="#cbd2e0", btn_text="#ffffff",
+        card_high="#ffe1e1", card_med="#fcedd4", card_low="#dcf3e8",
+    )
 
 
 def tokens():
