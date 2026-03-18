@@ -13,3 +13,4 @@ pandas
 joblib
 numpy
 pyarrow
+gunicorn
