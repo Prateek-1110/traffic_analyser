@@ -14,6 +14,15 @@ st.set_page_config(page_title="Risk Check", page_icon="🔮",
 inject_styles()
 t = tokens()
 
+# Force Streamlit widget labels to black for light theme visibility
+st.markdown("""
+    <style>
+        label, label p, .st-emotion-cache-10trnc2 p, .st-emotion-cache-10trnc2 { 
+            color: #000000 !important; 
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # ── Load model ────────────────────────────────────────────────────────────────
 @st.cache_resource(show_spinner="Loading prediction model…")
 def load_model():
@@ -71,7 +80,7 @@ left, right = st.columns([1, 1], gap="large")
 def sub(label):
     st.markdown(f"""
     <div style="font-family:'JetBrains Mono',monospace;font-size:11px;
-                letter-spacing:.18em;color:var(--text-color);opacity:0.7;
+                letter-spacing:.18em;color:#000000;opacity:0.7;
                 text-transform:uppercase;margin:24px 0 8px;font-weight:600">
         {label}
     </div>
@@ -121,7 +130,7 @@ with left:
 # ── Result ────────────────────────────────────────────────────────────────────
 with right:
     st.markdown(f"""<div style="font-family:'JetBrains Mono',monospace;font-size:11px;
-        letter-spacing:.18em;color:var(--text-color);opacity:0.7;
+        letter-spacing:.18em;color:#000000;opacity:0.7;
         text-transform:uppercase;margin-bottom:14px;font-weight:600">Result</div>""",
         unsafe_allow_html=True)
 
@@ -130,13 +139,13 @@ with right:
         st.markdown(f"""
         <div style="background:rgba(0,0,0,0.03);border:1px dashed rgba(0,0,0,0.1);
                     border-radius:14px;padding:48px 24px;text-align:center">
-            <div style="font-size:40px;margin-bottom:12px;opacity:.2">◈</div>
+            <div style="font-size:40px;margin-bottom:12px;opacity:.2;color:#000000">◈</div>
             <div style="font-family:'JetBrains Mono',monospace;font-size:12px;
-                        letter-spacing:.08em;color:var(--text-color);opacity:0.6">
+                        letter-spacing:.08em;color:#000000;opacity:0.6">
                 AWAITING INPUT
             </div>
             <div style="font-size:13px;margin-top:24px;
-                        color:var(--text-color);opacity:0.8;line-height:1.9;text-align:left;
+                        color:#000000;opacity:0.8;line-height:1.9;text-align:left;
                         border-top:1px solid rgba(0,0,0,0.05);padding-top:16px">
                 <b>Examples:</b><br>
                 ❄️ Snow/Ice · 23:00 · junction → High risk<br>
@@ -182,7 +191,7 @@ with right:
         </div>""", unsafe_allow_html=True)
 
         st.markdown(f"""<div style="font-family:'JetBrains Mono',monospace;
-            font-size:11px;letter-spacing:0.1em;color:var(--text-color);
+            font-size:11px;letter-spacing:0.1em;color:#000000;
             text-transform:uppercase;margin-bottom:16px;font-weight:600">
             Probability breakdown</div>""", unsafe_allow_html=True)
 
@@ -198,7 +207,7 @@ with right:
                                 height:100%;border-radius:99px"></div>
                 </div>
                 <div style="width:45px;font-family:'JetBrains Mono',monospace;
-                            font-size:11px;color:var(--text-color);text-align:right;font-weight:600">{p}%</div>
+                            font-size:11px;color:#000000;text-align:right;font-weight:600">{p}%</div>
             </div>""", unsafe_allow_html=True)
 
         with st.expander("View Input Summary"):
