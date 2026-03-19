@@ -5,16 +5,13 @@ import streamlit as st
 from huggingface_hub import hf_hub_download
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from shared_styles import (init_theme, inject_styles, tokens, footer,
-                           theme_toggle, page_header,get_theme)
+from shared_styles import (inject_styles, tokens, footer,
+                           page_header)
 
 st.set_page_config(page_title="Risk Check", page_icon="🔮",
                    layout="wide", initial_sidebar_state="expanded")
-init_theme()
 inject_styles()
 t = tokens()
-
-# theme_toggle()
 
 # ── Load model ────────────────────────────────────────────────────────────────
 @st.cache_resource(show_spinner="Loading prediction model…")
@@ -147,7 +144,7 @@ with right:
             probs    = {cls: round(float(p)*100, 1)
                         for cls, p in zip(encoder.classes_, proba)}
 
-        is_dark = st.session_state.get("theme", "dark") == "dark"
+        is_dark = True
         EMOJI = {"High": "🔴", "Medium": "🟡", "Low": "🟢"}
         COLOR = {"High": "#e63946", "Medium": "#f4a261", "Low": t["accent"]}
         card_bg = t[f"card_{'high' if risk=='High' else 'med' if risk=='Medium' else 'low'}"]

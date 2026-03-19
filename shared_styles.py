@@ -1,50 +1,22 @@
 import streamlit as st
-
-
-def init_theme():
-    if "theme" not in st.session_state:
-        st.session_state.theme = "dark"
-
-
-def get_theme():
-    return st.session_state.get("theme", "dark")
-
-
-def get_tokens():
-    dark = get_theme() == "dark"
-    if dark:
-        return dict(
-        bg="#080b12", bg2="#0d1117", bg3="#141928",
-        border="#1e2535", border_h="#2e3a52",
-        text="#c8cfe0", text_h="#edf0f7", text_m="#5a6a8a", text_dim="#2e3a52",
-        accent="#4fffb0", accent2="#7c6af5", accent3="#f4a261", danger="#e63946",
-        chart_grid="#141928", sidebar_bg="#0d1017",
-        bar_dim="#1e2a3a", btn_text="#080b12",
-        card_high="#1a0a0c", card_med="#1a120a", card_low="#081a12",
-    )
-    else:
-        return dict(
-        bg="#f4f5f9", bg2="#ffffff", bg3="#eef0f6",
-        border="#c4cadb", border_h="#8c9ab8", 
-        text="#2d3550", text_h="#0f1420", text_m="#5b6987", text_dim="#8392b4",
-        
-        accent="#0ea572", accent2="#5b4fd4", accent3="#d97706", danger="#dc2626",
-        chart_grid="#dce0eb", sidebar_bg="#ebf0f7",
-        bar_dim="#cbd2e0", btn_text="#ffffff",
-        card_high="#ffe1e1", card_med="#fcedd4", card_low="#dcf3e8",
-    )
+DARK_TOKENS = dict(
+    bg="#080b12", bg2="#0d1117", bg3="#141928",
+    border="#2a3447", border_h="#435373",          
+    text="#dce3f5", text_h="#ffffff",            
+    text_m="#8898b5", text_dim="#526280",         
+    accent="#4fffb0", accent2="#7c6af5", accent3="#f4a261", danger="#e63946",
+    chart_grid="#1c2336", sidebar_bg="#0d1017",
+    bar_dim="#25344a", btn_text="#080b12",
+    card_high="#2a1417", card_med="#241910", card_low="#0c2418", 
+)
 
 
 def tokens():
-    if "_tokens" not in st.session_state:
-        st.session_state["_tokens"] = get_tokens()
-    return st.session_state["_tokens"]
+    return DARK_TOKENS
 
 
 def inject_styles():
-    t    = get_tokens()
-    dark = get_theme() == "dark"
-    st.session_state["_tokens"] = t
+    t = DARK_TOKENS
 
     st.markdown(f"""
 <style>
@@ -60,7 +32,11 @@ html, body,
     font-family: 'Syne', sans-serif !important;
 }}
 
-[data-testid="stHeader"] {{ display: none !important; }}
+[data-testid="stHeader"] {{
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}}
 
 /* ── Sidebar ── */
 [data-testid="stSidebar"] {{
@@ -237,33 +213,6 @@ hr {{ border-color: {t['border']} !important; }}
 """, unsafe_allow_html=True)
 
 
-def theme_toggle():
-    """Renders theme switcher in sidebar."""
-    t      = tokens()
-    is_dark = get_theme() == "dark"
-
-    st.sidebar.markdown(f"""
-<div style="font-family:'JetBrains Mono',monospace;font-size:10px;
-            letter-spacing:.18em;color:{t['accent']};text-transform:uppercase;
-            padding:.5rem 0 .4rem">Theme</div>
-""", unsafe_allow_html=True)
-
-    c1, c2 = st.sidebar.columns(2)
-    if c1.button("☀ Light", use_container_width=True,
-                 type="primary" if not is_dark else "secondary"):
-        st.session_state.theme = "light"
-        st.session_state.pop("_tokens", None)
-        st.rerun()
-    if c2.button("☽ Dark", use_container_width=True,
-                 type="primary" if is_dark else "secondary"):
-        st.session_state.theme = "dark"
-        st.session_state.pop("_tokens", None)
-        st.rerun()
-
-    st.sidebar.markdown(
-        f"<hr style='border-color:{t['border']};margin:10px 0'>",
-        unsafe_allow_html=True
-    )
 
 
 def page_header(tag, title, subtitle, color=None):

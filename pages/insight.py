@@ -5,16 +5,13 @@ import plotly.graph_objects as go
 from huggingface_hub import hf_hub_download
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from shared_styles import (init_theme, inject_styles, tokens, footer,
-                           theme_toggle,get_theme ,page_header, section_label)
+from shared_styles import (inject_styles, tokens, footer,
+                           page_header, section_label)
 
 st.set_page_config(page_title="Insights", page_icon="📊",
                    layout="wide", initial_sidebar_state="expanded")
-init_theme()
 inject_styles()
 t = tokens()
-
-# theme_toggle()
 
 # ── Load ──────────────────────────────────────────────────────────────────────
 @st.cache_data(show_spinner="Downloading dataset from Hugging Face…")
@@ -38,7 +35,7 @@ st.metric("Total records", f"{len(df):,}")
 st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
 # ── Chart theme ───────────────────────────────────────────────────────────────
-is_dark = st.session_state.get("theme", "dark") == "dark"
+is_dark = True
 GRID    = dict(gridcolor=t["chart_grid"], zerolinecolor=t["chart_grid"])
 FONT    = dict(family="JetBrains Mono, monospace", color=t["text_m"], size=11)
 LAYOUT  = dict(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",

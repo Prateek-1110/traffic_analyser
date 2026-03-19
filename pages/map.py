@@ -5,16 +5,12 @@ from folium.plugins import HeatMap
 from streamlit_folium import st_folium
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from shared_styles import init_theme, inject_styles, tokens, footer, theme_toggle, page_header, section_label , get_theme
+from shared_styles import inject_styles, tokens, footer, page_header, section_label
 
 st.set_page_config(page_title="Hotspot Map", page_icon="🗺",
                    layout="wide", initial_sidebar_state="expanded")
-init_theme()
 inject_styles()
 t = tokens()
-
-# ── Sidebar ───────────────────────────────────────────────────────────────────
-# theme_toggle()
 
 @st.cache_data
 def load_hotspots():
@@ -49,7 +45,7 @@ st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
 # ── Map ───────────────────────────────────────────────────────────────────────
 RISK_COLORS = {"High": "#e63946", "Medium": "#f4a261", "Low": "#2a9d8f"}
-tile = "CartoDB dark_matter" if get_theme() == "dark" else "CartoDB positron"
+tile = "CartoDB dark_matter"
 
 clat = filtered["Lat"].mean() if len(filtered) else 37.8
 clng = filtered["Lng"].mean() if len(filtered) else -96.0
@@ -105,7 +101,3 @@ top["Peak_Hour"] = top["Peak_Hour"].apply(lambda x: f"{int(x):02d}:00")
 st.dataframe(top, use_container_width=True, hide_index=True)
 
 footer()
-
-
-def get_theme():
-    return st.session_state.get("theme", "dark")

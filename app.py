@@ -1,7 +1,7 @@
 import streamlit as st
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
-from shared_styles import init_theme, inject_styles, tokens, footer, theme_toggle, page_header
+from shared_styles import inject_styles, tokens, footer, page_header
 
 st.set_page_config(
     page_title="Traffic Hotspot Analyzer",
@@ -10,7 +10,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-init_theme()
 inject_styles()
 t = tokens()
 
