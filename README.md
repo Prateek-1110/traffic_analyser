@@ -134,12 +134,8 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ---
 
----
-
 ## 👨‍💻 Author
 
 **Prateek Agrahari**
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/prateek1110/)
-
----
