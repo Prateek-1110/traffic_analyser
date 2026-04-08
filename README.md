@@ -19,7 +19,7 @@ The output is a Django dashboard with an interactive map, insight charts, and a 
 ## Project structure
 
 ```
-traffic-hotspot-analyzer/
+traffic_analyser/
 ├── notebooks/
 │   ├── 01_eda.ipynb          # Data cleaning, feature engineering, visualization
 │   ├── 02_clustering.ipynb   # DBSCAN hotspot detection, Folium maps
@@ -75,8 +75,8 @@ Three pages served from the saved artifacts — no retraining needed at runtime.
 
 ```bash
 # 1. Clone the repo
-git clone https://github.com/your-username/traffic-analyzer.git
-cd traffic-hotspot-analyzer
+git clone https://github.com/pratee-1110/traffic_nalyser.git
+cd traffic_analyser
 
 # 2. Create a virtual environment
 python -m venv .venv
